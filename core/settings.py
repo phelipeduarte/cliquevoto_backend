@@ -4,24 +4,23 @@ Django settings for core project.
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv # NOVO: Carrega variáveis secretas
+from dotenv import load_dotenv 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carrega o arquivo .env (onde ficam as senhas de verdade)
+# Carrega o arquivo .env
 load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-chave-padrao-local')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Se no .env estiver DEBUG=True, ele fica True. Caso contrário, assume False (Segurança).
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-# Lê os domínios permitidos do .env. Na AWS, não podemos usar '*'
+# Configuração de Hosts
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*')
-ALLOWED_HOSTS = allowed_hosts_env.split(',')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,16 +29,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Ferramentas
+    
+    # Ferramentas de Terceiros (Apenas uma vez cada!)
+    'rest_framework',
     'corsheaders',
+    
     # Nosso App Principal
     'votacao',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', 
+    'corsheaders.middleware.CorsMiddleware', # Apenas uma vez no topo!
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -48,21 +49,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://192.168.18.129:5173",
-    "https://cliquevoto-saas.vercel.app",
-    "https://cliquevoto.com.br",
-    "https://www.cliquevoto.com.br",
-]
+# Configurações de CORS e CSRF
+CORS_ALLOW_ALL_ORIGINS = True # Facilita o desenvolvimento local
+CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://192.168.18.129:5173",
-    "http://192.168.18.129:8000",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5174",
+    "http://localhost:5174",
     "https://cliquevoto-saas.vercel.app",
     "https://api.cliquevoto.com.br",
     "https://cliquevoto.com.br",
-    "https://www.cliquevoto.com.br",
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -85,9 +83,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# TRUQUE DE ARQUITETURA: Separação por Ambiente (DEBUG)
+# Separação por Ambiente (DEBUG)
 if DEBUG: 
-    # Ambiente Local: usa o banco local SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -95,7 +92,6 @@ if DEBUG:
         }
     }
 else:
-    # Produção (AWS): usa o banco PostgreSQL, lendo as credenciais do .env
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -120,8 +116,6 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
-# NOVO: Pasta onde a AWS vai compilar os arquivos CSS do painel de Admin
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOW_ALL_ORIGINS = True
